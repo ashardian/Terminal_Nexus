@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal_Nexus</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #58a6ff;
+            --accent-color: #39d353;
+            --accent-glow: rgba(57, 211, 83, 0.4);
+            --terminal-bg: rgba(13, 17, 23, 0.85);
+            --search-bg: rgba(30, 35, 42, 0.9);
+            --terminal-header: rgba(88, 166, 255, 0.15);
+            --terminal-border: rgba(88, 166, 255, 0.3);
+            --gradient-start: rgba(57, 211, 83, 0.05);
+            --gradient-end: rgba(88, 166, 255, 0.05);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('https://cdnjs.cloudflare.com/ajax/libs/JetBrainsMono/2.242/web/woff2/JetBrainsMono-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        .hacker-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -3;
+            pointer-events: none;
+            opacity: 1;
+            background: radial-gradient(circle at center, var(--gradient-start), var(--gradient-end), transparent 70%);
+        }
+        .hacker-bg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -2;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        header {
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(88, 166, 255, 0.15);
+            backdrop-filter: blur(5px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: rgba(13, 17, 23, 0.7);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            text-shadow: 0 0 10px var(--accent-glow);
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .logo:hover {
+            text-shadow: 0 0 15px var(--accent-glow);
+            transform: scale(1.02);
+        }
+        .logo::before {
+            content: ">";
+            margin-right: 0.5rem;
+            animation: blink 1.2s step-end infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.8rem;
+        }
+        .nav-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            position: relative;
+            transition: color 0.3s, transform 0.2s;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 0.3rem 0.1rem;
+        }
+        .nav-links a:hover {
+            color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--accent-color);
+            transition: width 0.3s;
+            box-shadow: 0 0 5px var(--accent-glow);
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            position: relative;
+            margin-bottom: 80px;
+        }
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            perspective: 1000px;
+            min-height: 80px;
+        }
+        .search-bar-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+        }
+        .search-box {
+            width: 100%;
+            padding: 1.2rem 3rem 1.2rem 1.2rem;
+            background-color: var(--search-bg);
+            color: #fff;
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            animation: search-appear 0.8s ease-out forwards;
+            animation-delay: 0.3s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .search-box:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 5px 25px rgba(57, 211, 83, 0.25), 0 0 5px rgba(57, 211, 83, 0.1);
+            transform: translateY(-2px);
+        }
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            transition: color 0.3s;
+        }
+        .search-box:focus::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .search-icon-left {
+            display: none;
+        }
+        .search-icon-right {
+            position: absolute;
+            right: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            z-index: 2;
+            font-size: 1.3rem;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            pointer-events: auto;
+        }
+        .search-box:focus ~ .search-icon-right {
+            color: var(--accent-color);
+        }
+        .search-engine-select {
+            background-color: var(--search-bg);
+            color: #fff;
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            padding: 0.8rem 2.5rem 0.8rem 1rem;
+            outline: none;
+            margin-left: 0;
+            min-width: 150px;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2358a6ff' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 1rem) center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            animation: search-appear 0.8s ease-out forwards;
+            animation-delay: 0.4s;
+            opacity: 0;
+        }
+        .search-engine-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 5px 25px rgba(57, 211, 83, 0.25), 0 0 5px rgba(57, 211, 83, 0.1);
+            transform: translateY(-2px);
+        }
+        @keyframes search-appear {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        footer {
+            width: 100%;
+            background: rgba(13, 17, 23, 0.85);
+            border-top: 1px solid rgba(88, 166, 255, 0.15);
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.15);
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+        }
+        .footer-content {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .footer-links a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            opacity: 0.8;
+        }
+        .footer-links a:hover {
+            color: var(--accent-color);
+            opacity: 1;
+        }
+        .footer-copy {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.92rem;
+            letter-spacing: 0.5px;
+            user-select: none;
+        }
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+        .footer-social a {
+            color: var(--accent-color);
+            opacity: 0.7;
+            transition: opacity 0.2s, color 0.2s;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+        .footer-social a:hover {
+            opacity: 1;
+            color: var(--text-color);
+        }
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 1rem;
+            }
+            .terminal-container, .dashboard {
+                max-width: 95%;
+            }
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .footer-content {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+            .search-container {
+                flex-direction: column;
+                gap: 0.5rem;
+                min-height: unset;
+            }
+            .search-engine-select {
+                width: 100%;
+                min-width: 0;
+            }
+            footer {
+                padding: 0.8rem 1rem;
+            }
+            main {
+                margin-bottom: 100px;
+            }
+        }
+        @media (max-width: 480px) {
+            header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            .nav-links {
+                width: 100%;
+                justify-content: space-between;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+            .nav-links a {
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+            .search-box {
+                padding: 1rem 3rem 1rem 1rem;
+            }
+            main {
+                padding: 2rem 1rem;
+            }
+            .terminal-title {
+                display: none;
+            }
+            .footer-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .footer-content {
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- IMPROVED HACKER BACKGROUND -->
+    <div class="hacker-bg" aria-hidden="true">
+        <svg width="100%" height="100%" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;pointer-events:none;">
+            <g stroke="#39d353" stroke-opacity="0.08" stroke-width="1">
+                <line x1="160" y1="0" x2="160" y2="1080"/>
+                <line x1="320" y1="0" x2="320" y2="1080"/>
+                <line x1="480" y1="0" x2="480" y2="1080"/>
+                <line x1="640" y1="0" x2="640" y2="1080"/>
+                <line x1="800" y1="0" x2="800" y2="1080"/>
+                <line x1="960" y1="0" x2="960" y2="1080"/>
+                <line x1="1120" y1="0" x2="1120" y2="1080"/>
+                <line x1="1280" y1="0" x2="1280" y2="1080"/>
+                <line x1="1440" y1="0" x2="1440" y2="1080"/>
+                <line x1="1600" y1="0" x2="1600" y2="1080"/>
+                <line x1="1760" y1="0" x2="1760" y2="1080"/>
+                <line x1="0" y1="120" x2="1920" y2="120"/>
+                <line x1="0" y1="240" x2="1920" y2="240"/>
+                <line x1="0" y1="360" x2="1920" y2="360"/>
+                <line x1="0" y1="480" x2="1920" y2="480"/>
+                <line x1="0" y1="600" x2="1920" y2="600"/>
+                <line x1="0" y1="720" x2="1920" y2="720"/>
+                <line x1="0" y1="840" x2="1920" y2="840"/>
+                <line x1="0" y1="960" x2="1920" y2="960"/>
+            </g>
+            <path d="M0,240 L320,240 L320,480 L640,480 L640,600 L960,600 L960,360 L1280,360 L1280,840 L1600,840 L1600,120 L1920,120" 
+                  stroke="#39d353" stroke-opacity="0.1" stroke-width="2" fill="none"/>
+            <path d="M0,720 L480,720 L480,360 L800,360 L800,600 L1120,600 L1120,240 L1440,240 L1440,480 L1920,480" 
+                  stroke="#58a6ff" stroke-opacity="0.1" stroke-width="2" fill="none"/>
+        </svg>
+        <canvas class="hacker-bg-canvas" id="matrix-canvas"></canvas>
+    </div>
+    <div id="particles-js"></div>
+
+    <header>
+        <div class="logo">Terminal_Nexus</div>
+        <nav class="nav-links">
+            <a href="https://www.onlinegdb.com/online_bash_shell" target="_blank" rel="noopener">Terminal</a>
+            <a href="https://www.kali.org/tools/" target="_blank" rel="noopener">Tools</a>
+            <a href="https://www.speedtest.net/" target="_blank" rel="noopener">Networks</a>
+            <a href="https://www.hackerone.com/" target="_blank" rel="noopener">HackerOne</a>
+            <a href="https://www.cybrary.it/" target="_blank" rel="noopener">Learning</a>
+        </nav>
+    </header>
+    <main>
+        <div class="search-container">
+            <div class="search-bar-wrapper" style="width:100%; position:relative;">
+                <input type="text" class="search-box" placeholder="Search or type !command..." autocomplete="off" id="search-box">
+                <span class="search-icon-right" id="search-icon-right" aria-hidden="true" tabindex="0" style="pointer-events:auto; cursor:pointer;">
+                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" style="display:block" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2"/>
+                        <line x1="15.1213" y1="15.1213" x2="11.6569" y2="11.6569" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </span>
+            </div>
+            <select class="search-engine-select" id="search-engine-select" title="Choose search engine">
+                <option value="google">Google</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="bing">Bing</option>
+                <option value="yahoo">Yahoo</option>
+                <option value="brave">Brave</option>
+                <option value="startpage">Startpage</option>
+                <option value="yandex">Yandex</option>
+                <option value="baidu">Baidu</option>
+                <option value="ecosia">Ecosia</option>
+            </select>
+        </div>
+    </main>
+    <footer>
+        <div class="footer-content">
+            <div class="footer-copy">
+                &copy; <span id="footer-year"></span> Terminal_Nexus. All rights reserved.
+            </div>
+            <div class="footer-social">
+                <a href="https://github.com/ashardian" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+                    <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" style="display:block"><path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.987 1.029-2.687-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.594 1.028 2.687 0 3.847-2.337 4.695-4.566 4.944.359.309.678.919.678 1.852 0 1.336-.012 2.417-.012 2.747 0 .267.18.577.688.48C19.138 20.2 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/></svg>
+                </a>
+                <a href="https://t.me/decoder_32" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram">
+                    <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24" style="display:block"><path d="M9.993 15.674l-.39 4.13c.56 0 .8-.24 1.09-.53l2.62-2.5 5.44 3.97c1 .55 1.72.26 1.98-.92l3.6-16.8c.33-1.53-.56-2.13-1.53-1.77L1.36 9.37c-1.5.6-1.48 1.46-.27 1.85l4.37 1.37 10.16-6.41c.48-.31.92-.14.56.2"/></svg>
+                </a>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var yearSpan = document.getElementById('footer-year');
+                if (yearSpan) {
+                    yearSpan.textContent = new Date().getFullYear();
+                }
+            });
+        </script>
+    </footer>
+    <script>
+    // --- Optimized Search Script ---
+
+    // Remove overly aggressive anti-debug/anti-user code that causes blank screens
+
+    // --- Search engine URL templates ---
+    const searchEngines = {
+        google:      q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+        duckduckgo:  q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+        bing:        q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+        yahoo:       q => `https://search.yahoo.com/search?p=${encodeURIComponent(q)}`,
+        brave:       q => `https://search.brave.com/search?q=${encodeURIComponent(q)}`,
+        startpage:   q => `https://www.startpage.com/do/dsearch?query=${encodeURIComponent(q)}`,
+        yandex:      q => `https://yandex.com/search/?text=${encodeURIComponent(q)}`,
+        baidu:       q => `https://www.baidu.com/s?wd=${encodeURIComponent(q)}`,
+        ecosia:      q => `https://www.ecosia.org/search?q=${encodeURIComponent(q)}`
+    };
+
+    function doSearch() {
+        const input = document.getElementById('search-box');
+        const engine = document.getElementById('search-engine-select').value;
+        const query = input.value.trim();
+        if (!query) {
+            input.focus();
+            return;
+        }
+        // Only allow safe characters in query (basic XSS prevention)
+        if (/[\<\>\"\'\`]/.test(query)) {
+            alert('Invalid characters in search query.');
+            input.value = '';
+            input.focus();
+            return;
+        }
+        const url = (searchEngines[engine] || searchEngines.google)(query);
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    document.getElementById('search-box').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            doSearch();
+        }
+    });
+
+    document.getElementById('search-icon-right').addEventListener('click', function(e) {
+        doSearch();
+    });
+
+    document.getElementById('search-icon-right').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            doSearch();
+        }
+    });
+
+    // Remove referrer for all outgoing links (defense in depth)
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('a').forEach(function(a) {
+            a.setAttribute('rel', 'noreferrer noopener');
+        });
+    });
+
+    // Set Do Not Track (defense in depth)
+    if (typeof navigator !== "undefined") {
+        try {
+            Object.defineProperty(navigator, "doNotTrack", { value: "1", configurable: true });
+            Object.defineProperty(window, "doNotTrack", { value: "1", configurable: true });
+        } catch (e) {}
+    }
+
+   
+    // --- Optional: Simple Particles Background (no external library) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const bg = document.getElementById('particles-js');
+        if (!bg) return;
+        const canvas = document.createElement('canvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        bg.appendChild(canvas);
+
+        function resizeParticlesCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeParticlesCanvas);
+
+        const ctx = canvas.getContext('2d');
+        const particles = [];
+        const PARTICLE_COUNT = 60;
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 2 + 1,
+                dx: (Math.random() - 0.5) * 0.5,
+                dy: (Math.random() - 0.5) * 0.5
+            });
+        }
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#58a6ff';
+            for (let p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            // Draw lines
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        ctx.strokeStyle = 'rgba(88,166,255,0.08)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        function updateParticles() {
+            for (let p of particles) {
+                p.x += p.dx;
+                p.y += p.dy;
+                if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+            }
+        }
+        function animateParticles() {
+            updateParticles();
+            drawParticles();
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+    });
+    </script>
+</body>
